@@ -158,7 +158,11 @@ func (s *Service) Login(ctx context.Context, email, password string) (*LoginResp
 // ── Dashboard ──────────────────────────────────────────────────
 
 func (s *Service) GetDashboard(ctx context.Context, auth string) (*DashboardData, error) {
-	return doGet[DashboardData](ctx, s.httpClient, s.platformURL+"/platform/dashboard", auth)
+	result, err := doGet[DashboardData](ctx, s.httpClient, s.platformURL+"/platform/dashboard", auth)
+	if err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
 // ── Users ──────────────────────────────────────────────────────
