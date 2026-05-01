@@ -2,9 +2,9 @@ name: Monk Capsules
 
 'on':
   push:
-    branches-ignore: [ "main", "master" ]
+    branches-ignore: [ "main", "master", "capsule-config-3" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "capsule-config-3" ]
     types: [closed]
   schedule:
     - cron: "0 * * * *"
@@ -234,14 +234,15 @@ jobs:
           CLOUD_INSTANCE_COUNT: ${{ vars.CLOUD_INSTANCE_COUNT }}
           CLOUD_DISK_SIZE: ${{ vars.CLOUD_DISK_SIZE }}
           BRANCH_TAG: ${{ needs.resolve-context.outputs.branch_tag }}
-          PREVIEW_JWT_SECRET: ${{ secrets.PREVIEW_JWT_SECRET }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          WORKLOAD_SECRETS: "preview-jwt-secret:PREVIEW_JWT_SECRET postgres-password:POSTGRES_PASSWORD"
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          DEV_JWT_SECRET: ${{ secrets.DEV_JWT_SECRET }}
+          DEV_POSTGRES_PASSWORD: ${{ secrets.DEV_POSTGRES_PASSWORD }}
+          WORKLOAD_SECRETS: "dev-jwt-secret:DEV_JWT_SECRET dev-postgres-password:DEV_POSTGRES_PASSWORD"
       - name: Create pull request for branch lifecycle
         if: ${{ success() && env.ACT != 'true' }}
         run: |
           BRANCH="${{ needs.resolve-context.outputs.branch_name }}"
-          BASE="main"
+          BASE="capsule-config-3"
           REPO="${{ github.repository }}"
           PR_TITLE="[capsule] $BRANCH"
           PR_BODY="Auto-created by Monk Capsules.\n\nClosing this PR will destroy the Capsule."
@@ -464,7 +465,7 @@ jobs:
           MONKCODE_B64: ${{ needs.fetch-metadata.outputs.monkcode }}
           MONK_JIT_CLI_TOKEN_B64: ${{ needs.fetch-metadata.outputs.monk_jit_cli_token }}
           BRANCH_TAG: ${{ needs.resolve-context.outputs.branch_tag }}
-          MONK_WORKLOAD: "cap-test/preview"
+          MONK_WORKLOAD: "cap-test/dev"
           ENVIRONMENT_NAME: ${{ needs.resolve-context.outputs.environment_name }}
           CAPSULE_MODE: cloud
           PEER_POOL_TAG: 'capsule-pool'
@@ -540,7 +541,7 @@ jobs:
         env:
           MONKCODE_B64: ${{ needs.fetch-metadata.outputs.monkcode }}
           MONK_JIT_CLI_TOKEN_B64: ${{ needs.fetch-metadata.outputs.monk_jit_cli_token }}
-          MONK_WORKLOAD: "cap-test/preview"
+          MONK_WORKLOAD: "cap-test/dev"
           CAPSULE_MODE: cloud
           PEER_POOL_TAG: 'capsule-pool'
       - name: Update capsule metadata (success)
@@ -657,8 +658,8 @@ jobs:
           MONK_API_PREFIX: ${{ vars.MONK_API_PREFIX }}
           MONK_PROJECT_SLUG: ${{ vars.MONK_PROJECT_SLUG }}
           CAPSULE_DELETE_RECORDS: ${{ needs.resolve-context.outputs.action == 'destroy' && 'true' || 'false' }}
-          MONK_WORKLOAD: "cap-test/preview"
-          WORKLOAD_SECRETS: "preview-jwt-secret:PREVIEW_JWT_SECRET postgres-password:POSTGRES_PASSWORD"
+          MONK_WORKLOAD: "cap-test/dev"
+          WORKLOAD_SECRETS: "dev-jwt-secret:DEV_JWT_SECRET dev-postgres-password:DEV_POSTGRES_PASSWORD"
       - name: Deactivate GitHub Deployment
         if: ${{ always() && env.ACT != 'true' }}
         continue-on-error: true

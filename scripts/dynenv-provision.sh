@@ -305,6 +305,9 @@ case "$CLOUD_PROVIDER" in
     digitalocean)
         monk cluster provider add --provider digitalocean --digitalocean-token "$DO_API_TOKEN"
         ;;
+    hetzner)
+        monk cluster provider add --provider hetzner --hetzner-token "$HCLOUD_TOKEN"
+        ;;
     aws)
         monk cluster provider add --provider aws --access-key "$AWS_ACCESS_KEY_ID" --secret-key "$AWS_SECRET_ACCESS_KEY"
         ;;
