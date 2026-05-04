@@ -1,0 +1,369 @@
+namespace: cap-test
+
+postgres:
+  defines: runnable
+  inherits: postgresql/db-v16
+  services:
+    postgres:
+      container: postgres
+      port: 5432
+      protocol: tcp
+      publish: true
+      host-port: 5432
+  variables:
+    db_user:
+      type: string
+      value: postgres
+      env: POSTGRES_USER
+    db_name:
+      type: string
+      value: testcapsule
+      env: POSTGRES_DB
+    db_pass:
+      type: string
+      value: <- secret("dev-postgres-password")
+      env: POSTGRES_PASSWORD
+  permitted-secrets:
+    dev-postgres-password: true
+
+login:
+  defines: runnable
+  containers:
+    login:
+      image: login:latest
+  services:
+    http:
+      container: login
+      port: 8080
+      protocol: tcp
+      publish: true
+      host-port: 8081
+  checks:
+    readiness:
+      code: http-get-service("cap-test/login", "http", "/health") get-member("status") 200 eq?
+      period: 10
+      initialDelay: 5
+    liveness:
+      code: http-get-service("cap-test/login", "http", "/health") get-member("status") 200 eq?
+      period: 30
+      initialDelay: 10
+  variables:
+    port:
+      type: string
+      value: "8080"
+      env: PORT
+    environment:
+      type: string
+      value: development
+      env: ENVIRONMENT
+    jwt-secret:
+      type: string
+      value: <- secret("dev-jwt-secret")
+      env: JWT_SECRET
+  permitted-secrets:
+    dev-jwt-secret: true
+
+core:
+  defines: runnable
+  containers:
+    core:
+      image: core:latest
+  services:
+    http:
+      container: core
+      port: 8080
+      protocol: tcp
+      publish: true
+      host-port: 8083
+  connections:
+    postgres:
+      target: cap-test/postgres
+      service: postgres
+  depends:
+    wait-for:
+      runnables:
+        - cap-test/postgres
+      timeout: 120
+  checks:
+    readiness:
+      code: http-get-service("cap-test/core", "http", "/health") get-member("status") 200 eq?
+      period: 10
+      initialDelay: 10
+    liveness:
+      code: http-get-service("cap-test/core", "http", "/health") get-member("status") 200 eq?
+      period: 30
+      initialDelay: 15
+  variables:
+    port:
+      type: string
+      value: "8080"
+      env: PORT
+    environment:
+      type: string
+      value: development
+      env: ENVIRONMENT
+    jwt-secret:
+      type: string
+      value: <- secret("dev-jwt-secret")
+      env: JWT_SECRET
+    database-url:
+      type: string
+      value: >-
+        <- "postgres://"
+         "postgres"
+         ":"
+         secret("dev-postgres-password")
+         "@"
+         connection-hostname("postgres")
+         ":"
+         connection-port("postgres")
+         "/"
+         "testcapsule"
+         "?sslmode=disable"
+         concat-all
+      env: DATABASE_URL
+  permitted-secrets:
+    dev-jwt-secret: true
+    dev-postgres-password: true
+
+platform:
+  defines: runnable
+  containers:
+    platform:
+      image: platform:latest
+  services:
+    http:
+      container: platform
+      port: 8080
+      protocol: tcp
+      publish: true
+      host-port: 8082
+  connections:
+    core:
+      target: cap-test/core
+      service: http
+  depends:
+    wait-for:
+      runnables:
+        - cap-test/core
+      timeout: 120
+  checks:
+    readiness:
+      code: http-get-service("cap-test/platform", "http", "/health") get-member("status") 200 eq?
+      period: 10
+      initialDelay: 10
+    liveness:
+      code: http-get-service("cap-test/platform", "http", "/health") get-member("status") 200 eq?
+      period: 30
+      initialDelay: 15
+  variables:
+    port:
+      type: string
+      value: "8080"
+      env: PORT
+    environment:
+      type: string
+      value: development
+      env: ENVIRONMENT
+    jwt-secret:
+      type: string
+      value: <- secret("dev-jwt-secret")
+      env: JWT_SECRET
+    core-service-url:
+      type: string
+      value: >-
+        <- "http://"
+         connection-hostname("core")
+         ":"
+         connection-port("core")
+         concat-all
+      env: CORE_SERVICE_URL
+  permitted-secrets:
+    dev-jwt-secret: true
+
+api:
+  defines: runnable
+  containers:
+    api:
+      image: api:latest
+  services:
+    http:
+      container: api
+      port: 8080
+      protocol: tcp
+      publish: true
+      host-port: 8080
+  connections:
+    core:
+      target: cap-test/core
+      service: http
+  depends:
+    wait-for:
+      runnables:
+        - cap-test/core
+      timeout: 120
+  checks:
+    readiness:
+      code: http-get-service("cap-test/api", "http", "/health") get-member("status") 200 eq?
+      period: 10
+      initialDelay: 10
+    liveness:
+      code: http-get-service("cap-test/api", "http", "/health") get-member("status") 200 eq?
+      period: 30
+      initialDelay: 15
+  variables:
+    port:
+      type: string
+      value: "8080"
+      env: PORT
+    environment:
+      type: string
+      value: development
+      env: ENVIRONMENT
+    core-service-url:
+      type: string
+      value: >-
+        <- "http://"
+         connection-hostname("core")
+         ":"
+         connection-port("core")
+         concat-all
+      env: CORE_SERVICE_URL
+
+frontend:
+  defines: runnable
+  containers:
+    frontend:
+      image: frontend:latest
+  services:
+    http:
+      container: frontend
+      port: 8080
+      protocol: tcp
+      publish: true
+      host-port: 3000
+  connections:
+    login:
+      target: cap-test/login
+      service: http
+    platform:
+      target: cap-test/platform
+      service: http
+    core:
+      target: cap-test/core
+      service: http
+    api:
+      target: cap-test/api
+      service: http
+  depends:
+    wait-for:
+      runnables:
+        - cap-test/login
+        - cap-test/platform
+        - cap-test/core
+        - cap-test/api
+      timeout: 180
+  checks:
+    readiness:
+      code: http-get-service("cap-test/frontend", "http", "/health") get-member("status") 200 eq?
+      period: 10
+      initialDelay: 10
+    liveness:
+      code: http-get-service("cap-test/frontend", "http", "/health") get-member("status") 200 eq?
+      period: 30
+      initialDelay: 15
+  variables:
+    port:
+      type: string
+      value: "8080"
+      env: PORT
+    environment:
+      type: string
+      value: development
+      env: ENVIRONMENT
+    login-service-url:
+      type: string
+      value: >-
+        <- "http://"
+         connection-hostname("login")
+         ":"
+         connection-port("login")
+         concat-all
+      env: LOGIN_SERVICE_URL
+    platform-service-url:
+      type: string
+      value: >-
+        <- "http://"
+         connection-hostname("platform")
+         ":"
+         connection-port("platform")
+         concat-all
+      env: PLATFORM_SERVICE_URL
+    core-service-url:
+      type: string
+      value: >-
+        <- "http://"
+         connection-hostname("core")
+         ":"
+         connection-port("core")
+         concat-all
+      env: CORE_SERVICE_URL
+    api-service-url:
+      type: string
+      value: >-
+        <- "http://"
+         connection-hostname("api")
+         ":"
+         connection-port("api")
+         concat-all
+      env: API_SERVICE_URL
+
+endpoints:
+  defines: monkec/endpoints
+  endpoints:
+    frontend:
+      url: >-
+        <- "http://"
+         connection-public-ip("frontend")
+         ":"
+         connection-public-port("frontend")
+         concat-all
+      description: Frontend development URL
+    api:
+      url: >-
+        <- "http://"
+         connection-public-ip("api")
+         ":"
+         connection-public-port("api")
+         concat-all
+      description: API development URL
+  entrypoint: frontend
+  connections:
+    frontend:
+      target: cap-test/frontend
+      service: http
+    api:
+      target: cap-test/api
+      service: http
+  depends:
+    wait-for:
+      runnables:
+        - cap-test/frontend
+        - cap-test/api
+      timeout: 180
+
+dev:
+  defines: group
+  members:
+    - cap-test/postgres
+    - cap-test/login
+    - cap-test/core
+    - cap-test/platform
+    - cap-test/api
+    - cap-test/frontend
+    - cap-test/endpoints
+  variables:
+    environment:
+      type: string
+      value: development
+      env: ENVIRONMENT
