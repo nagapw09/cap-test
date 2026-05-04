@@ -2,9 +2,9 @@ name: Monk Capsules
 
 'on':
   push:
-    branches-ignore: [ "main", "master", "test" ]
+    branches-ignore: [ "main", "master" ]
   pull_request:
-    branches: [ "main", "master", "test" ]
+    branches: [ "main", "master" ]
     types: [closed]
   schedule:
     - cron: "0 * * * *"
@@ -234,7 +234,7 @@ jobs:
           CLOUD_INSTANCE_COUNT: ${{ vars.CLOUD_INSTANCE_COUNT }}
           CLOUD_DISK_SIZE: ${{ vars.CLOUD_DISK_SIZE }}
           BRANCH_TAG: ${{ needs.resolve-context.outputs.branch_tag }}
-          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
           DEV_JWT_SECRET: ${{ secrets.DEV_JWT_SECRET }}
           DEV_POSTGRES_PASSWORD: ${{ secrets.DEV_POSTGRES_PASSWORD }}
           WORKLOAD_SECRETS: "dev-jwt-secret:DEV_JWT_SECRET dev-postgres-password:DEV_POSTGRES_PASSWORD"
@@ -242,7 +242,7 @@ jobs:
         if: ${{ success() && env.ACT != 'true' }}
         run: |
           BRANCH="${{ needs.resolve-context.outputs.branch_name }}"
-          BASE="test"
+          BASE="main"
           REPO="${{ github.repository }}"
           PR_TITLE="[capsule] $BRANCH"
           PR_BODY="Auto-created by Monk Capsules.\n\nClosing this PR will destroy the Capsule."

@@ -1,0 +1,11 @@
+REPO cap-test
+LOAD cap-test.yaml
+ENV dev
+ENTRY cap-test/dev
+ENTRY dev:cap-test/dev
+SECRET dev-jwt-secret dev-postgres-password
+IMAGE login:latest cap-test/login . Dockerfile
+IMAGE platform:latest cap-test/platform . Dockerfile
+IMAGE core:latest cap-test/core . Dockerfile
+IMAGE api:latest cap-test/api . Dockerfile
+IMAGE frontend:latest cap-test/frontend . Dockerfile
