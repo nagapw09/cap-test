@@ -2,9 +2,9 @@ name: Monk Capsules
 
 'on':
   push:
-    branches-ignore: [ "main", "master" ]
+    branches-ignore: [ "main", "master", "capsule-config-10" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main", "master", "capsule-config-10" ]
     types: [closed]
   schedule:
     - cron: "0 * * * *"
@@ -235,7 +235,8 @@ jobs:
           CLOUD_INSTANCE_COUNT: ${{ vars.CLOUD_INSTANCE_COUNT }}
           CLOUD_DISK_SIZE: ${{ vars.CLOUD_DISK_SIZE }}
           BRANCH_TAG: ${{ needs.resolve-context.outputs.branch_tag }}
-          GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           DEV_JWT_SECRET: ${{ secrets.DEV_JWT_SECRET }}
           DEV_POSTGRES_PASSWORD: ${{ secrets.DEV_POSTGRES_PASSWORD }}
           WORKLOAD_SECRETS: "dev-jwt-secret:DEV_JWT_SECRET dev-postgres-password:DEV_POSTGRES_PASSWORD"
@@ -243,7 +244,7 @@ jobs:
         if: ${{ success() && env.ACT != 'true' }}
         run: |
           BRANCH="${{ needs.resolve-context.outputs.branch_name }}"
-          BASE="main"
+          BASE="capsule-config-10"
           REPO="${{ github.repository }}"
           PR_TITLE="[capsule] $BRANCH"
           PR_BODY="Auto-created by Monk Capsules.\n\nClosing this PR will destroy the Capsule."
