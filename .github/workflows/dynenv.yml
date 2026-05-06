@@ -2,9 +2,9 @@ name: Monk Capsules
 
 'on':
   push:
-    branches-ignore: [ "main", "master", "capsule-config-10" ]
+    branches-ignore: [ "main", "master", "capsule-config-11" ]
   pull_request:
-    branches: [ "main", "master", "capsule-config-10" ]
+    branches: [ "main", "master", "capsule-config-11" ]
     types: [closed]
   schedule:
     - cron: "0 * * * *"
@@ -235,8 +235,12 @@ jobs:
           CLOUD_INSTANCE_COUNT: ${{ vars.CLOUD_INSTANCE_COUNT }}
           CLOUD_DISK_SIZE: ${{ vars.CLOUD_DISK_SIZE }}
           BRANCH_TAG: ${{ needs.resolve-context.outputs.branch_tag }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          AZURE_SDK_AUTH: ${{ secrets.AZURE_SDK_AUTH }}
           DEV_JWT_SECRET: ${{ secrets.DEV_JWT_SECRET }}
           DEV_POSTGRES_PASSWORD: ${{ secrets.DEV_POSTGRES_PASSWORD }}
           WORKLOAD_SECRETS: "dev-jwt-secret:DEV_JWT_SECRET dev-postgres-password:DEV_POSTGRES_PASSWORD"
@@ -244,7 +248,7 @@ jobs:
         if: ${{ success() && env.ACT != 'true' }}
         run: |
           BRANCH="${{ needs.resolve-context.outputs.branch_name }}"
-          BASE="capsule-config-10"
+          BASE="capsule-config-11"
           REPO="${{ github.repository }}"
           PR_TITLE="[capsule] $BRANCH"
           PR_BODY="Auto-created by Monk Capsules.\n\nClosing this PR will destroy the Capsule."
