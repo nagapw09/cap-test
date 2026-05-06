@@ -230,6 +230,7 @@ jobs:
           MONK_PROJECT_SLUG: ${{ vars.MONK_PROJECT_SLUG }}
           CLOUD_PROVIDER: ${{ vars.CLOUD_PROVIDER }}
           CLOUD_REGION: ${{ vars.CLOUD_REGION }}
+          CLOUD_ZONE: ${{ vars.CLOUD_ZONE }}
           CLOUD_INSTANCE_TYPE: ${{ vars.CLOUD_INSTANCE_TYPE }}
           CLOUD_INSTANCE_COUNT: ${{ vars.CLOUD_INSTANCE_COUNT }}
           CLOUD_DISK_SIZE: ${{ vars.CLOUD_DISK_SIZE }}

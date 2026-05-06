@@ -336,21 +336,36 @@ case "$CLOUD_PROVIDER" in
 esac
 
         # A.4 Grow cluster (provision instances)
-        printf "${GREEN}Growing cluster ($CLOUD_INSTANCE_COUNT x $CLOUD_INSTANCE_TYPE in $CLOUD_REGION)...${NC}\n"
+        # Region/zone handling per provider:
+        #   GCP/AWS: --region <region> --zone <zone>  (e.g. us-east-1 + us-east-1a)
+        #   others:  --region <region>
+        GROW_REGION="$CLOUD_REGION"
+        ZONE_FLAG=""
+        if [ -n "$CLOUD_ZONE" ] && { [ "$CLOUD_PROVIDER" = "gcp" ] || [ "$CLOUD_PROVIDER" = "aws" ]; }; then
+            ZONE_FLAG="--zone $CLOUD_ZONE"
+        fi
+        printf "${GREEN}Growing cluster ($CLOUD_INSTANCE_COUNT x $CLOUD_INSTANCE_TYPE in $GROW_REGION)...${NC}\n"
         DISK_SIZE_FLAG=""
-        if [ -n "$CLOUD_DISK_SIZE" ] && [ "$CLOUD_PROVIDER" != "digitalocean" ]; then
+        if [ -n "$CLOUD_DISK_SIZE" ] && [ "$CLOUD_PROVIDER" != "digitalocean" ] && [ "$CLOUD_PROVIDER" != "hetzner" ]; then
             DISK_SIZE_FLAG="--disk-size $CLOUD_DISK_SIZE"
         fi
+        # Disk type defaults per provider (CLI requires an explicit value; not applicable to DigitalOcean or Hetzner).
+        DISK_TYPE_FLAG=""
+        case "$CLOUD_PROVIDER" in
+            gcp)     DISK_TYPE_FLAG="--disk-type pd-standard" ;;
+            aws)     DISK_TYPE_FLAG="--disk-type gp2" ;;
+            azure)   DISK_TYPE_FLAG="--disk-type Standard_LRS" ;;
+        esac
         monk cluster grow \
             --name "$CLUSTER_NAME" \
             --tag "$BRANCH_TAG" \
             --provider "$CLOUD_PROVIDER" \
-            --region "$CLOUD_REGION" \
+            --region "$GROW_REGION" \
             --instance-type "$CLOUD_INSTANCE_TYPE" \
             --num-instances "$CLOUD_INSTANCE_COUNT" \
             --generate-domain \
             --generate-ssl-cert \
-            $DISK_SIZE_FLAG
+            $DISK_SIZE_FLAG $DISK_TYPE_FLAG $ZONE_FLAG
 
         # A.5 Extract cluster info
         printf "${GREEN}Extracting cluster information...${NC}\n"
